@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
 import {
@@ -46,16 +47,21 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export default function DirectionDashboard() {
   const { auth, logout } = useAuth()
+  const navigate = useNavigate()
   const [stats, setStats] = useState(null)
+  const [patients, setPatients] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
+  const [patientSearch, setPatientSearch] = useState('')
 
   useEffect(() => {
-    api.get('/dashboard/stats/').then(res => { setStats(res.data); setLoading(false) }).catch(() => setLoading(false))
+    api.get('/direction/stats/').then(res => { setStats(res.data); setLoading(false) }).catch(() => setLoading(false))
+    api.get('/direction/patients/').then(res => setPatients(res.data)).catch(() => {})
   }, [])
 
   const tabs = [
     { id: 'overview',      label: '📊 Vue d\'ensemble' },
+    { id: 'patients',      label: '👥 Liste des patients' },
     { id: 'diseases',      label: '🦠 Maladies & Diagnostics' },
     { id: 'medications',   label: '💊 Médicaments' },
     { id: 'consultations', label: '📋 Liste consultations' },
@@ -182,6 +188,98 @@ export default function DirectionDashboard() {
                   </BarChart>
                 </ResponsiveContainer>
               </ChartCard>
+            </div>
+          </>}
+
+          {/* ===== LISTE DES PATIENTS ===== */}
+          {activeTab === 'patients' && <>
+            <h2 className="font-display text-2xl text-navy mb-1">Liste des patients</h2>
+            <p className="text-xs text-muted mb-4">Tous les patients enregistrés dans l'établissement.</p>
+
+            {/* Barre de recherche */}
+            <div className="mb-4">
+              <input
+                className="form-input max-w-sm"
+                placeholder="Rechercher par nom, prénom ou DMP…"
+                value={patientSearch}
+                onChange={e => setPatientSearch(e.target.value)}
+              />
+            </div>
+
+            <div className="bg-white border border-border rounded-xl overflow-hidden">
+              <div className="grid text-[10px] font-semibold text-muted uppercase tracking-wider px-5 py-3 bg-bg border-b border-border"
+                style={{ gridTemplateColumns: '2.5fr 1fr 1.2fr 1.5fr 1fr 120px' }}>
+                <span>Patient</span>
+                <span>Âge · Sexe</span>
+                <span>Groupe sanguin</span>
+                <span>Dernière consultation</span>
+                <span>Accès</span>
+                <span>Actions</span>
+              </div>
+
+              {patients.length === 0
+                ? <div className="p-10 text-center text-muted text-sm">Aucun patient enregistré.</div>
+                : (() => {
+                    const q = patientSearch.toLowerCase()
+                    const filtered = q
+                      ? patients.filter(p =>
+                          p.prenom.toLowerCase().includes(q) ||
+                          p.nom.toLowerCase().includes(q) ||
+                          p.dmp_id.toLowerCase().includes(q)
+                        )
+                      : patients
+
+                    if (filtered.length === 0)
+                      return <div className="p-8 text-center text-muted text-sm">Aucun résultat pour « {patientSearch} ».</div>
+
+                    return filtered.map(p => {
+                      const init = (p.prenom[0] + p.nom[0]).toUpperCase()
+                      return (
+                        <div key={p.id}
+                          className="grid px-5 py-3.5 border-b border-border last:border-0 hover:bg-bg/50 transition-colors items-center"
+                          style={{ gridTemplateColumns: '2.5fr 1fr 1.2fr 1.5fr 1fr 120px' }}>
+
+                          {/* Identité */}
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full flex items-center justify-center font-semibold text-white flex-shrink-0 text-xs"
+                              style={{ background: p.color }}>
+                              {init}
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-text">{p.prenom} {p.nom}</div>
+                              <div className="text-[11px] text-muted">DMP-{p.dmp_id}</div>
+                            </div>
+                          </div>
+
+                          <div className="text-xs text-muted">{p.age} ans · {p.sexe === 'F' ? 'F' : 'M'}</div>
+                          <div className="text-xs font-medium text-navy">{p.blood}</div>
+                          <div className="text-xs text-muted">{p.last_consult || 'Aucune'}</div>
+
+                          {/* Badge accès */}
+                          <div>
+                            {p.first_login
+                              ? <span className="badge-warn text-[10px]">⏳ Code temp.</span>
+                              : <span className="badge-ok text-[10px]">🔐 Code actif</span>
+                            }
+                          </div>
+
+                          {/* Actions */}
+                          <div>
+                            <button
+                              onClick={() => navigate(`/direction/dossier/${p.dmp_id}`)}
+                              className="px-3 py-1.5 border border-border rounded-lg text-[11px] font-medium text-muted hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-colors cursor-pointer bg-white font-sans">
+                              📁 Dossier
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })
+                  })()
+              }
+            </div>
+
+            <div className="mt-3 text-[11px] text-muted">
+              {patients.length > 0 && `${patients.length} patient${patients.length > 1 ? 's' : ''} enregistré${patients.length > 1 ? 's' : ''} au total`}
             </div>
           </>}
 

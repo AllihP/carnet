@@ -58,10 +58,13 @@ class PatientListCreateView(APIView):
         return [IsAuthenticated(), IsStaff()]
 
     def get(self, request):
+        # Un médecin ne voit que ses propres patients
         if request.user.role == 'medecin':
             patients = Patient.objects.filter(doctor=request.user).order_by('-created_at')
-        else:
+        elif request.user.role == 'direction':
             patients = Patient.objects.all().order_by('-created_at')
+        else:
+            return Response({'error': 'Accès refusé.'}, status=403)
         return Response(PatientListSerializer(patients, many=True).data)
 
     def post(self, request):

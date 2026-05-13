@@ -17,18 +17,21 @@ function IRow({ label, value }) {
 export default function DossierMedical() {
   const { dmpId } = useParams()
   const navigate = useNavigate()
-  const { logout } = useAuth()
+  const { auth, logout } = useAuth()
   const [patient, setPatient] = useState(null)
   const [consultations, setConsultations] = useState([])
   const [activeTab, setActiveTab] = useState('b0')
   const [loading, setLoading] = useState(true)
 
+  const space = auth?.role === 'direction' ? 'direction' : 'medecin'
+  const backPath = auth?.role === 'direction' ? '/direction' : '/medecin'
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [pRes, cRes] = await Promise.all([
-          api.get(`/patients/${dmpId}/`),
-          api.get(`/consultations/patient/${dmpId}/`),
+          api.get(`/${space}/patients/${dmpId}/`),
+          api.get(`/${space}/consultations/patient/${dmpId}/`),
         ])
         setPatient(pRes.data)
         setConsultations(cRes.data)
@@ -36,7 +39,7 @@ export default function DossierMedical() {
       setLoading(false)
     }
     fetchData()
-  }, [dmpId])
+  }, [dmpId, space])
 
   if (loading) return <div className="flex items-center justify-center h-screen bg-bg"><div className="text-muted text-sm">Chargement du dossier…</div></div>
   if (!patient) return <div className="flex items-center justify-center h-screen bg-bg"><div className="text-muted text-sm">Dossier introuvable.</div></div>
@@ -65,8 +68,10 @@ export default function DossierMedical() {
         <div className="w-px h-5 bg-border"/>
         <span className="text-xs text-muted">Dossier médical</span>
         <div className="ml-auto flex gap-2">
-          <button onClick={() => navigate(`/medecin/consultation/${dmpId}`)} className="btn-primary text-xs">🩺 Nouvelle consultation</button>
-          <button onClick={() => navigate('/medecin')} className="btn-secondary text-xs">← Tableau de bord</button>
+          {auth?.role === 'medecin' && (
+            <button onClick={() => navigate(`/medecin/consultation/${dmpId}`)} className="btn-primary text-xs">🩺 Nouvelle consultation</button>
+          )}
+          <button onClick={() => navigate(backPath)} className="btn-secondary text-xs">← Tableau de bord</button>
         </div>
       </div>
 

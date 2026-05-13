@@ -33,7 +33,7 @@ export default function PatientBooklet() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api.get('/patients/me/').then(res => { setData(res.data); setLoading(false) }).catch(() => setLoading(false))
+    api.get('/patient/me/').then(res => { setData(res.data); setLoading(false) }).catch(() => setLoading(false))
   }, [])
 
   if (loading) return <div className="flex items-center justify-center h-screen bg-bg"><div className="text-muted text-sm">Chargement…</div></div>

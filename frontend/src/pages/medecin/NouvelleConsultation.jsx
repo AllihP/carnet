@@ -53,7 +53,7 @@ export default function NouvelleConsultation() {
   const loadPatient = async id => {
     setSearching(true)
     try {
-      const res = await api.get(`/patients/${id}/`)
+      const res = await api.get(`/medecin/patients/${id}/`)
       setPatient(res.data)
       setForm(f => ({...f,
         ant_chr: res.data.ant_chr||'', ant_chir: res.data.ant_chir||'',
@@ -123,7 +123,7 @@ export default function NouvelleConsultation() {
         vaccines: vaccines.filter(v=>v.name),
         allergies: allergies.filter(a=>a.name),
       }
-      await api.post('/consultations/', payload)
+      await api.post('/medecin/consultations/', payload)
       showToast('✅ Consultation sauvegardée avec succès !')
       setTimeout(() => navigate('/medecin'), 1200)
     } catch (err) {

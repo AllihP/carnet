@@ -3,8 +3,13 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/auth/', include('accounts.urls')),
-    path('api/patients/', include('patients.urls')),
-    path('api/consultations/', include('consultations.urls')),
-    path('api/dashboard/', include('dashboard.urls')),
+
+    # Espace Patient  — /api/patient/
+    path('api/patient/', include('hopital.patient_urls')),
+
+    # Espace Médecin  — /api/medecin/
+    path('api/medecin/', include('hopital.medecin_urls')),
+
+    # Espace Direction — /api/direction/
+    path('api/direction/', include('hopital.direction_urls')),
 ]

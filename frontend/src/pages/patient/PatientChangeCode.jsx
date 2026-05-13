@@ -18,7 +18,7 @@ export default function PatientChangeCode() {
     if (newCode !== confirm) { setError('Les codes ne correspondent pas.'); return }
     setLoading(true)
     try {
-      const res = await api.post('/patients/change-code/', { new_code: newCode, confirm_code: confirm })
+      const res = await api.post('/patient/change-code/', { new_code: newCode, confirm_code: confirm })
       updatePatientToken(res.data.token, res.data.patient)
       navigate('/patient/cover')
     } catch (err) {

@@ -56,6 +56,54 @@ class RegisterView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class MedecinLoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        username = request.data.get('username', '').strip()
+        password = request.data.get('password', '').strip()
+
+        if not username or not password:
+            return Response({'error': 'Identifiant et mot de passe requis.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = authenticate(username=username, password=password)
+        if not user:
+            return Response({'error': 'Identifiants incorrects.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        if not user.is_active:
+            return Response({'error': 'Compte désactivé.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        if user.role != 'medecin':
+            return Response({'error': 'Accès réservé aux médecins.'}, status=status.HTTP_403_FORBIDDEN)
+
+        token = generate_staff_token(user)
+        return Response({'token': token, 'user': UserSerializer(user).data})
+
+
+class DirectionLoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        username = request.data.get('username', '').strip()
+        password = request.data.get('password', '').strip()
+
+        if not username or not password:
+            return Response({'error': 'Identifiant et mot de passe requis.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = authenticate(username=username, password=password)
+        if not user:
+            return Response({'error': 'Identifiants incorrects.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        if not user.is_active:
+            return Response({'error': 'Compte désactivé.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        if user.role != 'direction':
+            return Response({'error': 'Accès réservé à la direction.'}, status=status.HTTP_403_FORBIDDEN)
+
+        token = generate_staff_token(user)
+        return Response({'token': token, 'user': UserSerializer(user).data})
+
+
 class DoctorsListView(APIView):
     def get(self, request):
         doctors = CustomUser.objects.filter(role='medecin')

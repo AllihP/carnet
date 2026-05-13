@@ -22,9 +22,6 @@ export default function MedecinDashboard() {
   const [patients, setPatients] = useState([])
   const [loading, setLoading] = useState(true)
   const [showNew, setShowNew] = useState(false)
-  const [showVerify, setShowVerify] = useState(null)
-  const [verifyCode, setVerifyCode] = useState('')
-  const [verifyErr, setVerifyErr] = useState('')
   const [toast, setToast] = useState('')
   const [newForm, setNewForm] = useState({ prenom:'', nom:'', dob:'', sexe:'F', blood:'O+', addr:'', tel:'', job:'', urg:'' })
   const [createdInfo, setCreatedInfo] = useState(null)
@@ -33,7 +30,7 @@ export default function MedecinDashboard() {
 
   const loadPatients = useCallback(async () => {
     try {
-      const res = await api.get('/patients/')
+      const res = await api.get('/medecin/patients/')
       setPatients(res.data)
     } catch (_) {}
     setLoading(false)
@@ -44,25 +41,12 @@ export default function MedecinDashboard() {
   const createPatient = async e => {
     e.preventDefault()
     try {
-      const res = await api.post('/patients/', newForm)
+      const res = await api.post('/medecin/patients/', newForm)
       setCreatedInfo(res.data)
       setShowNew(false)
       loadPatients()
     } catch (err) {
       showToast(err.response?.data?.error || 'Erreur lors de la création.')
-    }
-  }
-
-  const openVerify = patient => { setShowVerify(patient); setVerifyCode(''); setVerifyErr('') }
-
-  const handleVerify = async () => {
-    try {
-      const res = await api.post(`/patients/${showVerify.dmp_id}/verify-code/`, { code: verifyCode })
-      setShowVerify(null)
-      navigate(`/medecin/consultation/${showVerify.dmp_id}`)
-    } catch (_) {
-      setVerifyErr('Code incorrect. Demandez au patient son code d\'accès actuel.')
-      setVerifyCode('')
     }
   }
 
@@ -119,60 +103,8 @@ export default function MedecinDashboard() {
           </button>
         </div>
 
-        {/* Table patients */}
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-navy">Liste des patients</h2>
-        </div>
-
-        <div className="bg-white border border-border rounded-xl overflow-hidden">
-          <div className="grid gap-0 text-[10px] font-semibold text-muted uppercase tracking-wider px-5 py-3 bg-bg border-b border-border"
-            style={{gridTemplateColumns:'2.5fr 1fr 1.2fr 1.5fr 1fr 160px'}}>
-            <span>Patient</span><span>Âge · Sexe</span><span>Groupe sanguin</span>
-            <span>Dernière consultation</span><span>Accès</span><span>Actions</span>
-          </div>
-          {loading
-            ? <div className="p-8 text-center text-muted text-sm">Chargement…</div>
-            : patients.length === 0
-            ? <div className="p-10 text-center text-muted text-sm">Aucun patient enregistré. Créez votre premier patient.</div>
-            : patients.map(p => {
-                const init = (p.prenom[0] + p.nom[0]).toUpperCase()
-                return (
-                  <div key={p.id} className="grid px-5 py-3.5 border-b border-border last:border-0 hover:bg-bg/50 transition-colors items-center"
-                    style={{gridTemplateColumns:'2.5fr 1fr 1.2fr 1.5fr 1fr 160px'}}>
-                    <div className="flex items-center gap-3">
-                      <Avatar initials={init} color={p.color} size={36}/>
-                      <div>
-                        <div className="text-sm font-medium text-text">{p.prenom} {p.nom}</div>
-                        <div className="text-[11px] text-muted">DMP-{p.dmp_id}</div>
-                      </div>
-                    </div>
-                    <div className="text-xs text-muted">{p.age} ans · {p.sexe === 'F' ? 'F' : 'M'}</div>
-                    <div className="text-xs font-medium text-navy">{p.blood}</div>
-                    <div className="text-xs text-muted">{p.last_consult || 'Aucune'}</div>
-                    <div>
-                      {p.first_login
-                        ? <span className="badge-warn text-[10px]">⏳ Code temp.</span>
-                        : <span className="badge-ok text-[10px]">🔐 Code actif</span>
-                      }
-                    </div>
-                    <div className="flex gap-1.5">
-                      <button onClick={() => navigate(`/medecin/dossier/${p.dmp_id}`)}
-                        className="px-3 py-1.5 border border-border rounded-lg text-[11px] font-medium text-muted hover:bg-teal hover:text-white hover:border-teal transition-colors cursor-pointer bg-white font-sans">
-                        📁 Dossier
-                      </button>
-                      <button onClick={() => openVerify(p)}
-                        className="px-3 py-1.5 bg-navy text-white rounded-lg text-[11px] font-medium hover:bg-navy/80 transition-colors cursor-pointer border-none font-sans">
-                        🩺 Consulter
-                      </button>
-                    </div>
-                  </div>
-                )
-              })
-          }
-        </div>
-
-        <div className="mt-4 p-4 bg-white border border-border rounded-xl text-xs text-muted leading-relaxed">
-          💡 <strong className="text-text">Comment fonctionne l'accès :</strong> Pour consulter un patient, cliquez sur "Consulter" puis saisissez le code que le patient vous communique en cabinet. Pour simplement consulter le dossier sans code, utilisez "📁 Dossier".
+        <div className="p-4 bg-white border border-border rounded-xl text-xs text-muted leading-relaxed">
+          💡 <strong className="text-text">Démarrer une consultation :</strong> Cliquez sur "Nouvelle consultation" et saisissez l'identifiant DMP du patient pour ouvrir sa fiche.
         </div>
       </div>
 
@@ -235,48 +167,6 @@ export default function MedecinDashboard() {
             <button onClick={() => { navigator.clipboard?.writeText(createdInfo.temp_code); showToast('Code copié !') }}
               className="btn-secondary mb-3 w-full">📋 Copier le code</button>
             <button onClick={() => setCreatedInfo(null)} className="btn-primary w-full">Fermer</button>
-          </div>
-        </div>
-      )}
-
-      {/* Modal: Vérification code */}
-      {showVerify && (
-        <div className="fixed inset-0 bg-navy/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-8 w-[420px] shadow-modal">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="font-display text-xl text-navy">🔐 Vérification d'accès</h2>
-              <button onClick={() => setShowVerify(null)} className="text-muted hover:text-text text-lg cursor-pointer bg-none border-none">✕</button>
-            </div>
-            <div className="flex items-center gap-3 p-3.5 bg-bg rounded-xl mb-5">
-              <Avatar initials={(showVerify.prenom[0]+showVerify.nom[0]).toUpperCase()} color={showVerify.color} size={44}/>
-              <div>
-                <div className="font-semibold text-navy text-sm">{showVerify.prenom} {showVerify.nom}</div>
-                <div className="text-xs text-muted">DMP-{showVerify.dmp_id}</div>
-              </div>
-            </div>
-            {showVerify.first_login && (
-              <div className="bg-gold-pale border border-gold/40 rounded-xl p-4 mb-4 text-xs text-amber-700">
-                <strong className="block mb-1">⏳ Première connexion en attente</strong>
-                Code temporaire valide : <strong className="font-display text-lg ml-1">{showVerify.temp_code}</strong>
-              </div>
-            )}
-            {verifyErr && (
-              <div className="bg-danger-pale border border-danger/30 rounded-lg px-3.5 py-2.5 text-xs text-danger mb-3">{verifyErr}</div>
-            )}
-            <label className="form-label">Code d'accès fourni par le patient</label>
-            <input
-              className="form-input text-center text-lg font-semibold tracking-widest mb-1"
-              placeholder="MC-4829"
-              value={verifyCode}
-              onChange={e=>setVerifyCode(e.target.value)}
-              onKeyDown={e=>e.key==='Enter'&&handleVerify()}
-              autoFocus
-            />
-            <p className="text-[11px] text-muted mb-5">Le patient communique son code au moment de la consultation.</p>
-            <div className="flex gap-3 justify-end">
-              <button onClick={()=>setShowVerify(null)} className="btn-secondary">Annuler</button>
-              <button onClick={handleVerify} className="btn-primary">Accéder au dossier →</button>
-            </div>
           </div>
         </div>
       )}
